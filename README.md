@@ -1,14 +1,13 @@
-TSV parser for Go
+TSV parser for Go 
 ====
+Based on github.com/dogenzaka/tsv but supports \N to indicate a null value in a collumn
 
-[![Build Status](https://travis-ci.org/dogenzaka/tsv.svg?branch=master)](https://travis-ci.org/dogenzaka/tsv)
-[![Coverage Status](https://coveralls.io/repos/dogenzaka/tsv/badge.svg)](https://coveralls.io/r/dogenzaka/tsv)
 [![License](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/dogenzaka/rotator/blob/master/LICENSE)
 
 tsv is tab-separated values parser for GO. It will parse lines and insert data into any type of struct. tsv supports both simple structs and structs with tagging.
 
 ```
-go get github.com/dogenzaka/tsv
+go get github.com/dllz/tsv
 ```
 
 Quickstart
