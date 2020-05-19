@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // Parser has information for parser
@@ -18,6 +19,7 @@ type Parser struct {
 	indices    []int // indices is field index list of header array
 	structMode bool
 	normalize  norm.Form
+	arrayDeliminator string
 }
 
 // NewStructModeParser creates new TSV parser with given io.Reader as struct mode
@@ -74,7 +76,7 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 }
 
 // NewParserWithoutHeader creates new TSV parser with given io.Reader
-func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
+func NewParserWithoutHeader(reader io.Reader, data interface{}, arrayDeliminator string) *Parser {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 
@@ -83,6 +85,7 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}) *Parser {
 		Data:      data,
 		ref:       reflect.ValueOf(data).Elem(),
 		normalize: -1,
+		arrayDeliminator: arrayDeliminator,
 	}
 
 	return p
@@ -119,20 +122,20 @@ func (p *Parser) Next() (eof bool, err error) {
 	// record should be a pointer
 	for i, record := range records {
 		idx := p.indices[i]
-		if idx == 0 {
+		if idx == 0 || record == "\\N" {
 			// skip empty index
 			continue
 		}
 		// get target field
 		field := p.ref.Field(idx - 1)
-		switch field.Kind() {
-		case reflect.String:
+		switch reflect.TypeOf(field).Name(){
+		case "string":
 			// Normalize text
 			if p.normalize >= 0 {
 				record = p.normalize.String(record)
 			}
 			field.SetString(record)
-		case reflect.Bool:
+		case "bool":
 			if record == "" {
 				field.SetBool(false)
 			} else {
@@ -142,7 +145,7 @@ func (p *Parser) Next() (eof bool, err error) {
 				}
 				field.SetBool(col)
 			}
-		case reflect.Int:
+		case "int":
 			if record == "" {
 				field.SetInt(0)
 			} else {
@@ -152,6 +155,18 @@ func (p *Parser) Next() (eof bool, err error) {
 				}
 				field.SetInt(col)
 			}
+		case "[]string":
+			if p.arrayDeliminator != ""{
+				subRecords := strings.Split(record, p.arrayDeliminator)
+				if p.normalize >= 0 {
+					for index, subRecord := range subRecords {
+						subRecords[index] = p.normalize.String(subRecord)
+					}
+				}
+				field.
+			}
+
+		case "float64":
 		default:
 			return false, errors.New("Unsupported field type")
 		}
