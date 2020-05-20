@@ -3,6 +3,7 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
@@ -12,13 +13,13 @@ import (
 
 // Parser has information for parser
 type Parser struct {
-	Headers    []string
-	Reader     *csv.Reader
-	Data       interface{}
-	ref        reflect.Value
-	indices    []int // indices is field index list of header array
-	structMode bool
-	normalize  norm.Form
+	Headers          []string
+	Reader           *csv.Reader
+	Data             interface{}
+	ref              reflect.Value
+	indices          []int // indices is field index list of header array
+	structMode       bool
+	normalize        norm.Form
 	arrayDeliminator string
 }
 
@@ -81,10 +82,10 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}, arrayDeliminator
 	r.Comma = '\t'
 
 	p := &Parser{
-		Reader:    r,
-		Data:      data,
-		ref:       reflect.ValueOf(data).Elem(),
-		normalize: -1,
+		Reader:           r,
+		Data:             data,
+		ref:              reflect.ValueOf(data).Elem(),
+		normalize:        -1,
 		arrayDeliminator: arrayDeliminator,
 	}
 
@@ -122,13 +123,17 @@ func (p *Parser) Next() (eof bool, err error) {
 	// record should be a pointer
 	for i, record := range records {
 		idx := p.indices[i]
-		if idx == 0 || record == "\\N" {
+		if idx == 0 {
 			// skip empty index
 			continue
 		}
+		//Account for other ways of denoting null
+		if record == "\\N" {
+			record = ""
+		}
 		// get target field
 		field := p.ref.Field(idx - 1)
-		switch reflect.TypeOf(field).Name(){
+		switch field.Type().String() {
 		case "string":
 			// Normalize text
 			if p.normalize >= 0 {
@@ -136,7 +141,7 @@ func (p *Parser) Next() (eof bool, err error) {
 			}
 			field.SetString(record)
 		case "bool":
-			if record == "" {
+			if record == "" || record == "\\N" {
 				field.SetBool(false)
 			} else {
 				col, err := strconv.ParseBool(record)
@@ -156,21 +161,42 @@ func (p *Parser) Next() (eof bool, err error) {
 				field.SetInt(col)
 			}
 		case "[]string":
-			if p.arrayDeliminator != ""{
+			if p.arrayDeliminator != "" {
+				fmt.Println(record)
 				subRecords := strings.Split(record, p.arrayDeliminator)
-				if p.normalize >= 0 {
-					for index, subRecord := range subRecords {
-						subRecords[index] = p.normalize.String(subRecord)
+				var cleanedUpRecords []string
+				for _, subRecord := range subRecords {
+					subRecord = strings.TrimSpace(subRecord)
+					if subRecord == "" {
+						continue
 					}
+					cleanedUpRecords = append(cleanedUpRecords, subRecord)
 				}
-				field.
+				slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(record)), len(cleanedUpRecords), cap(cleanedUpRecords))
+				//fmt.Println(field.Elem().Type().String(), field.Elem().Kind().String())
+				field.Set(slice)
+				for index, cleanedUpRecord := range cleanedUpRecords {
+					if p.normalize >= 0 {
+						cleanedUpRecords[index] = p.normalize.String(cleanedUpRecord)
+					}
+					slice.Index(index).Set(reflect.ValueOf(cleanedUpRecords[index]))
+				}
+				fmt.Println(slice)
+				fmt.Println(field)
 			}
-
 		case "float64":
+			if record == "" {
+				field.SetFloat(0)
+			} else {
+				col, err := strconv.ParseFloat(record, 64)
+				if err != nil {
+					return false, err
+				}
+				field.SetFloat(col)
+			}
 		default:
-			return false, errors.New("Unsupported field type")
+			return false, errors.New("Unsupported field type:" + field.Type().String())
 		}
 	}
-
 	return false, nil
 }
