@@ -171,6 +171,8 @@ func TestParserTaggedStructure(t *testing.T) {
 				data.Gender != "male" ||
 				data.Active != true ||
 				len(data.MiddleNames) != 2 {
+				fmt.Println(data)
+				fmt.Println(data.Name)
 				t.Error("Record does not match index:0")
 			}
 		}

@@ -3,6 +3,7 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
@@ -130,6 +131,7 @@ func (p *Parser) Next() (eof bool, err error) {
 			// skip empty index
 			continue
 		}
+		fmt.Println(record)
 		record = strings.TrimSpace(record)
 		//Account for other ways of denoting null
 		if p.nilSign != "" {
