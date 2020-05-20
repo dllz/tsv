@@ -1,7 +1,8 @@
-alex  	10	male  	true 	steven, micheal, joeseph
-john  	24	male  	false	steven, micheal
-sara  	30	female	true 	steven
-taro  	40	male  	true 	steven, marc, joeseph   	overflow	record
+alex  	10	male  	true 	steven, micheal, joeseph	\N                                   	\N
+john  	24	male  	false	steven, micheal         	\N                                   	\N
+sara  	30	female	true 	steven                  	\N                                   	\N
+taro  	40	male  	true 	steven, marc, joeseph   	\N                                   	\N                  	overflow	record
 hanako	  	female	no
-mike  	55	male
-\N    	55	male  	\N   	\N
+mike  	55	male  	\N   	\N                      	\N                                   	\N
+\N    	55	male  	\N   	\N                      	\N                                   	\N
+big   	69	female	true 	\N                      	1231231231231212312321354123312312312	12312312312541234123

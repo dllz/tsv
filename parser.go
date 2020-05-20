@@ -3,7 +3,6 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
@@ -21,10 +20,11 @@ type Parser struct {
 	structMode       bool
 	normalize        norm.Form
 	arrayDeliminator string
+	nilSign          string
 }
 
 // NewStructModeParser creates new TSV parser with given io.Reader as struct mode
-func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
+func NewParser(reader io.Reader, data interface{}, arrayDeliminator string, nilSign string) (*Parser, error) {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 
@@ -40,13 +40,15 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 	}
 
 	p := &Parser{
-		Reader:     r,
-		Headers:    headers,
-		Data:       data,
-		ref:        reflect.ValueOf(data).Elem(),
-		indices:    make([]int, len(headers)),
-		structMode: false,
-		normalize:  -1,
+		Reader:           r,
+		Headers:          headers,
+		Data:             data,
+		ref:              reflect.ValueOf(data).Elem(),
+		indices:          make([]int, len(headers)),
+		structMode:       false,
+		normalize:        -1,
+		arrayDeliminator: arrayDeliminator,
+		nilSign:          nilSign,
 	}
 
 	// get type information
@@ -77,7 +79,7 @@ func NewParser(reader io.Reader, data interface{}) (*Parser, error) {
 }
 
 // NewParserWithoutHeader creates new TSV parser with given io.Reader
-func NewParserWithoutHeader(reader io.Reader, data interface{}, arrayDeliminator string) *Parser {
+func NewParserWithoutHeader(reader io.Reader, data interface{}, arrayDeliminator string, nilSign string) *Parser {
 	r := csv.NewReader(reader)
 	r.Comma = '\t'
 
@@ -87,6 +89,7 @@ func NewParserWithoutHeader(reader io.Reader, data interface{}, arrayDeliminator
 		ref:              reflect.ValueOf(data).Elem(),
 		normalize:        -1,
 		arrayDeliminator: arrayDeliminator,
+		nilSign:          nilSign,
 	}
 
 	return p
@@ -127,9 +130,12 @@ func (p *Parser) Next() (eof bool, err error) {
 			// skip empty index
 			continue
 		}
+		record = strings.TrimSpace(record)
 		//Account for other ways of denoting null
-		if record == "\\N" {
-			record = ""
+		if p.nilSign != "" {
+			if record == p.nilSign {
+				record = ""
+			}
 		}
 		// get target field
 		field := p.ref.Field(idx - 1)
@@ -141,7 +147,7 @@ func (p *Parser) Next() (eof bool, err error) {
 			}
 			field.SetString(record)
 		case "bool":
-			if record == "" || record == "\\N" {
+			if record == "" {
 				field.SetBool(false)
 			} else {
 				col, err := strconv.ParseBool(record)
@@ -162,7 +168,6 @@ func (p *Parser) Next() (eof bool, err error) {
 			}
 		case "[]string":
 			if p.arrayDeliminator != "" {
-				fmt.Println(record)
 				subRecords := strings.Split(record, p.arrayDeliminator)
 				var cleanedUpRecords []string
 				for _, subRecord := range subRecords {
@@ -173,7 +178,6 @@ func (p *Parser) Next() (eof bool, err error) {
 					cleanedUpRecords = append(cleanedUpRecords, subRecord)
 				}
 				slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(record)), len(cleanedUpRecords), cap(cleanedUpRecords))
-				//fmt.Println(field.Elem().Type().String(), field.Elem().Kind().String())
 				field.Set(slice)
 				for index, cleanedUpRecord := range cleanedUpRecords {
 					if p.normalize >= 0 {
@@ -181,14 +185,22 @@ func (p *Parser) Next() (eof bool, err error) {
 					}
 					slice.Index(index).Set(reflect.ValueOf(cleanedUpRecords[index]))
 				}
-				fmt.Println(slice)
-				fmt.Println(field)
 			}
 		case "float64":
 			if record == "" {
 				field.SetFloat(0)
 			} else {
 				col, err := strconv.ParseFloat(record, 64)
+				if err != nil {
+					return false, err
+				}
+				field.SetFloat(col)
+			}
+		case "float32":
+			if record == "" {
+				field.SetFloat(0)
+			} else {
+				col, err := strconv.ParseFloat(record, 32)
 				if err != nil {
 					return false, err
 				}

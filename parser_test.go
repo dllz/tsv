@@ -13,6 +13,8 @@ type TestRow struct {
 	Gender      string
 	Active      bool
 	MiddleNames []string
+	BigNumber   float64
+	SmallNumber float32
 }
 
 type TestTaggedRow struct {
@@ -33,7 +35,7 @@ func TestParserWithoutHeader(t *testing.T) {
 	defer file.Close()
 
 	data := TestRow{}
-	parser := NewParserWithoutHeader(file, &data, ",")
+	parser := NewParserWithoutHeader(file, &data, ",", "\\N")
 
 	i := 0
 
@@ -61,6 +63,7 @@ func TestParserWithoutHeader(t *testing.T) {
 				data.Gender != "male" ||
 				data.Active != false ||
 				len(data.MiddleNames) != 2 {
+				fmt.Println(data)
 				t.Error("Record does not match index:1")
 				if err != nil {
 					t.Error(err)
@@ -116,6 +119,21 @@ func TestParserWithoutHeader(t *testing.T) {
 				}
 			}
 		}
+		if i == 7 {
+			if data.Name != "big" ||
+				data.Age != 69 ||
+				data.Gender != "female" ||
+				data.Active != true ||
+				len(data.MiddleNames) != 0 ||
+				data.BigNumber != 1231231231231212312321354123312312312 ||
+				data.SmallNumber != 12312312312541234123 {
+				fmt.Println(data)
+				t.Error("Record does not match index:7")
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		}
 		i++
 	}
 
@@ -131,7 +149,7 @@ func TestParserTaggedStructure(t *testing.T) {
 	defer file.Close()
 
 	data := TestTaggedRow{}
-	parser, err := NewParser(file, &data)
+	parser, err := NewParser(file, &data, ",", "\\N")
 	if err != nil {
 		t.Error(err)
 		return
@@ -195,7 +213,7 @@ func TestParserNormalize(t *testing.T) {
 	defer file.Close()
 
 	data := TestRow{}
-	parser, err := NewParser(file, &data)
+	parser, err := NewParser(file, &data, ",", "\\N")
 	if err != nil {
 		t.Error(err)
 		return
