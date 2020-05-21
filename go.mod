@@ -1,4 +1,4 @@
-module github.com/dllz/tsv
+module github.com/dllz/tsv-advanced
 
 go 1.14
 
