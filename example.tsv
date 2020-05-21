@@ -1,7 +1,7 @@
 name  	age	gender	active	middleNames
 alex  	10 	male  	true  	steven, joeseph
 john  	24 	male  	false 	steven
-sara  	30 	female	true
-taro  	40 	male  	true  	overflow       	record
-hanako	   	female	no
-mike  	55 	male
+sara  	30 	female	true  	\N
+taro  	40 	male  	true  	\N             	overflow	record
+hanako	   	female	no    	\N
+mike  	55 	male  	\N

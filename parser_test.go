@@ -18,10 +18,10 @@ type TestRow struct {
 }
 
 type TestTaggedRow struct {
+	Name        string   `tsv:"name"`
 	Age         int      `tsv:"age"`
 	Active      bool     `tsv:"active"`
 	Gender      string   `tsv:"gender"`
-	Name        string   `tsv:"name"`
 	MiddleNames []string `tsv:"middleNames"`
 }
 
@@ -185,6 +185,7 @@ func TestParserTaggedStructure(t *testing.T) {
 				data.Gender != "male" ||
 				data.Active != false ||
 				len(data.MiddleNames) != 1 {
+				fmt.Println(data)
 				t.Error("Record does not match index:1")
 			}
 		}
@@ -197,6 +198,7 @@ func TestParserTaggedStructure(t *testing.T) {
 				data.Gender != "female" ||
 				data.Active != true ||
 				len(data.MiddleNames) != 0 {
+				fmt.Println(data)
 				t.Error("Record does not match index:2")
 			}
 		}

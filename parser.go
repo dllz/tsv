@@ -3,7 +3,6 @@ package tsv
 import (
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"golang.org/x/text/unicode/norm"
 	"io"
 	"reflect"
@@ -37,7 +36,7 @@ func NewParser(reader io.Reader, data interface{}, arrayDeliminator string, nilS
 	}
 
 	for i, header := range headers {
-		headers[i] = header
+		headers[i] = strings.TrimSpace(header)
 	}
 
 	p := &Parser{
@@ -115,7 +114,6 @@ func (p *Parser) Next() (eof bool, err error) {
 			break
 		}
 	}
-
 	if len(p.indices) == 0 {
 		p.indices = make([]int, len(records))
 		// mapping simple index
@@ -123,7 +121,6 @@ func (p *Parser) Next() (eof bool, err error) {
 			p.indices[i] = i + 1
 		}
 	}
-
 	// record should be a pointer
 	for i, record := range records {
 		idx := p.indices[i]
@@ -131,7 +128,6 @@ func (p *Parser) Next() (eof bool, err error) {
 			// skip empty index
 			continue
 		}
-		fmt.Println(record)
 		record = strings.TrimSpace(record)
 		//Account for other ways of denoting null
 		if p.nilSign != "" {
