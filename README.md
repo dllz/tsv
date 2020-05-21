@@ -1,13 +1,20 @@
-TSV parser for Go 
+Advanced TSV parser for Go 
 ====
-Based on github.com/dogenzaka/tsv but supports \N to indicate a null value in a collumn
+Based on github.com/dogenzaka/tsv but has some improvements
 
-[![License](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://github.com/dogenzaka/rotator/blob/master/LICENSE)
+- Support for []string 
+- Support for float64 
+- Support for float32
+- Support for nil values in columns 
+- More resilient to empty spaces
+- Supports go modules
 
-tsv is tab-separated values parser for GO. It will parse lines and insert data into any type of struct. tsv supports both simple structs and structs with tagging.
+Note it is not a complete drop in replacement as some of the public API needed to be changed in order to support more functionality
+
+tsv advanced is tab-separated values parser for GO. It will parse lines and insert data into any type of struct. tsv supports both simple structs and structs with tagging.
 
 ```
-go get github.com/dllz/tsv
+go get github.com/dllz/tsv-advanced
 ```
 
 Quickstart
@@ -34,9 +41,10 @@ func main() {
 
   file, _ := os.Open("example.tsv")
   defer file.Close()
-
+  arrayDeliminator := ","
+  nilSign := "\\N"
   data := TestRow{}
-  parser, _ := NewParser(file, &data)
+  parser, err := NewParser(file, &data, arrayDeliminator, nilSign)
 
   for {
     eof, err := parser.Next()
@@ -57,19 +65,25 @@ You can define tags to struct fields to map values.
 
 ```go
 type TestRow struct {
-  Name   string `tsv:"name"`
-  Age    int    `tsv:"age"`
-  Gender string `tsv:"gender"`
-  Active bool   `tsv:"bool"`
+	Name        string   `tsv:"name"`
+	Age         int      `tsv:"age"`
+	Active      bool     `tsv:"active"`
+	Gender      string   `tsv:"gender"`
+	MiddleNames []string `tsv:"middleNames"`
+	BigNumber   float64  `tsv:"bigNumber"`
+	SmallNumber float32  `tsv:"smallNumber"`
 }
 ```
 
 Supported field types
 --
 
-Currently this library supports limited fields
+Currently, this library supports limited fields but more can easily be added on request or feel free to open PRs with the added functionality
 
 - int
 - string
 - bool
+- float32
+- float64
+- []string
 
